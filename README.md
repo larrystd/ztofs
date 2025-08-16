@@ -8,7 +8,7 @@ step 1实现create, open, remove, read, write, setattr, getattr语义。
 
 step 2实现全部文件系统语义, 做简单性能测试
 
-step 3基于fuse 实现posix语义客户端和挂载 
+step 3基于fuse 实现posix语义客户端和挂载  
 
 ## 编译
 
