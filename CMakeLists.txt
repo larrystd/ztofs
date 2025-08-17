@@ -22,14 +22,14 @@ include(FindThreads)
 include(FindProtobuf)
 
 # brpc include and lib
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/third_party/brpc/build/output")
+set(BRPC_PATH ${CMAKE_CURRENT_BINARY_DIR}/third_party/brpc/output)
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
 # option(BUILD_BRPC_TOOLS "Whether to build brpc tools" OFF)
 option(LINK_SO "Whether examples are linked dynamically" OFF)
-add_subdirectory(third_party/brpc EXCLUDE_FROM_ALL)
-include_directories("${CMAKE_PREFIX_PATH}/include")
-link_directories(${CMAKE_PREFIX_PATH}/lib)
+add_subdirectory(third_party/brpc )
+include_directories(${BRPC_PATH}/include)
+link_directories(${BRPC_PATH}/lib)
 set(BRPC_LIB brpc)
 
 # gflags include and lib
