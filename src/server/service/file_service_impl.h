@@ -3,13 +3,16 @@
 
 #include "proto/file_service.pb.h"
 #include <brpc/server.h>
+#include "server/meta/meta.h"
 
 namespace ztofs {
 namespace server {
 
 class FileServiceImpl : public FileService {
 public:
-FileServiceImpl();
+    FileServiceImpl(MetaInterface* meta)
+        : meta_(meta)
+    {}
     virtual ~FileServiceImpl() = default;
     
     void Create(::google::protobuf::RpcController* controller,
@@ -21,6 +24,9 @@ FileServiceImpl();
                 const ::ztofs::RemoveRequest* request,
                 ::ztofs::RemoveResponse* response,
                 ::google::protobuf::Closure* done) override;
+
+private:
+    MetaInterface* meta_;
 };
 
 } // namespace server

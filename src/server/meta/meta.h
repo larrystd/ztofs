@@ -12,6 +12,7 @@ namespace server
 
 class MetaInterface
 {
+public:
     virtual butil::Status Create(const std::string& path, FileHandle* fileHandle) = 0;
     virtual butil::Status Remove(const FileHandle& fileHandle) = 0;
 };

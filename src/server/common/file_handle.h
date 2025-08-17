@@ -9,9 +9,9 @@ struct FileHandle
 {
     std::string path;
     int fd{-1};
-    bool is_valid{false};
+    bool is_valid{true};
     
-    FileHandle() : fd(-1), is_valid(false) {}
+    FileHandle() : fd(-1), is_valid(true) {}
     FileHandle(const std::string& path, int fd) 
         : path(path), fd(fd), is_valid(true) {}
 
