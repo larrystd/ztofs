@@ -21,7 +21,7 @@ jobs:
 
     steps:
     - name: prepare env
-      run: apt install -y git g++ make libssl-dev libgflags-dev libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev
+      run: sudo apt-get install -y git g++ make libssl-dev libgflags-dev libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev
       
     - name: Checkout code
       uses: actions/checkout@v4
