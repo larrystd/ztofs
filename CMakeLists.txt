@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(ztofs C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS_OUTPUT 
-    "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json"
-)
+set(CMAKE_EXPORT_COMPILE_COMMANDS_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json")
 
 set(CMAKE_CXX_FLAGS "${DEFINE_CLOCK_GETTIME} -DNDEBUG -O2 -D__const__=__unused__ -pipe -W -Wall -Wno-unused-parameter -fPIC -fno-omit-frame-pointer")
 
@@ -23,36 +21,15 @@ endif()
 include(FindThreads)
 include(FindProtobuf)
 
-set(PROTO_FILE "${PROJECT_SOURCE_DIR}/src/proto/echo.proto")
-set(PROTO_OUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/proto")
-
-file(MAKE_DIRECTORY ${PROTO_OUT_DIR})
-# 这样cmake阶段就可以生成proto
-execute_process(
-    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-        --proto_path=${PROJECT_SOURCE_DIR}/src/proto
-        --cpp_out=${PROTO_OUT_DIR}
-        ${PROTO_FILE}
-    RESULT_VARIABLE PROTOC_RESULT
-)
-
-if(NOT PROTOC_RESULT EQUAL 0)
-    message(FATAL_ERROR "Failed to generate proto files")
-endif()
-
-set(PROTO_SRCS "${PROTO_OUT_DIR}/echo.pb.cc")
-set(PROTO_HDRS "${PROTO_OUT_DIR}/echo.pb.h")
-include_directories(${PROTO_OUT_DIR})
-
 # brpc include and lib
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/third_party/brpc/build/output")
+set(BRPC_PATH ${CMAKE_CURRENT_BINARY_DIR}/third_party/brpc/output)
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
 # option(BUILD_BRPC_TOOLS "Whether to build brpc tools" OFF)
 option(LINK_SO "Whether examples are linked dynamically" OFF)
-add_subdirectory(third_party/brpc EXCLUDE_FROM_ALL)
-include_directories("${CMAKE_PREFIX_PATH}/include")
-link_directories(${CMAKE_PREFIX_PATH}/lib)
+add_subdirectory(third_party/brpc )
+include_directories(${BRPC_PATH}/include)
+link_directories(${BRPC_PATH}/lib)
 set(BRPC_LIB brpc)
 
 # gflags include and lib
@@ -91,8 +68,5 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_INCLUDE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 
-add_executable(file_server src/server/server.cpp ${PROTO_SRCS})
-target_link_libraries(file_server ${BRPC_LIB} ${DYNAMIC_LIB})
-
-add_executable(file_client src/client/client.cpp ${PROTO_SRCS})
-target_link_libraries(file_client ${BRPC_LIB} ${DYNAMIC_LIB})
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
+add_subdirectory(src)
