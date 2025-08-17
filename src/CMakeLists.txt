@@ -19,6 +19,7 @@ endif()
 file(GLOB PROTO_SRCS "${PROTO_OUT_DIR}/*.pb.cc")
 
 add_executable(file_client client/echo_client.cpp ${PROTO_SRCS})
+add_dependencies(file_client thirdparty_deps)
 target_link_libraries(file_client ${BRPC_LIB} ${DYNAMIC_LIB})
 
 add_subdirectory(server)

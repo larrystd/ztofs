@@ -42,6 +42,7 @@ target_include_directories(server PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/server
 )
 target_link_libraries(server service storage common)
+add_dependencies(file_client thirdparty_deps)
 
 # Install targets (optional)
 install(TARGETS server DESTINATION bin)
