@@ -6,6 +6,7 @@ add_executable(meta_test
 )
 target_link_libraries(meta_test 
     meta
+    storage
     ${BRPC_LIB} ${DYNAMIC_LIB}
 )
 add_dependencies(meta_test thirdparty_deps)
