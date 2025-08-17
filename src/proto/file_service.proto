@@ -1,0 +1,27 @@
+// storage.proto
+syntax = "proto2";
+
+package ztofs;
+
+option cc_generic_services = true;
+
+message CreateRequest {
+    optional string path = 1;
+}
+
+message CreateResponse {
+    required int32 status = 1;
+}
+
+message RemoveRequest {
+    optional string path = 1;
+}
+
+message RemoveResponse {
+    required int32 status = 1;
+}
+
+service FileService {
+    rpc Create(CreateRequest) returns (CreateResponse);
+    rpc Remove(RemoveRequest) returns (RemoveResponse);
+}
