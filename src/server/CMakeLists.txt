@@ -23,6 +23,15 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/service
         )
 add_subdirectory(service)
 
+# Storage
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/storage
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        )
+add_subdirectory(storage)
+
 # server binary
 add_executable(file_server ${CMAKE_CURRENT_SOURCE_DIR}/server.cpp ${PROTO_SRCS})
 target_include_directories(file_server PUBLIC 
