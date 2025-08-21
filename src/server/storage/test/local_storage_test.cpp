@@ -13,7 +13,11 @@ class LocalStorageTest : public ::testing::Test
 protected:
     void SetUp() override 
     {
-        // Create test directory
+        mFsEnv.mountfd = open("/", O_DIRECTORY|O_RDONLY);
+        mFsEnv.mountpath = "/";
+        mLocalMeta = std::make_unique<LocalMeta>(&mFsEnv);
+        mLocalStorage = std::make_unique<LocalStorage>(&mFsEnv);
+        
         mkdir(mTestDir.c_str(), 0755);
     }
 
@@ -22,27 +26,44 @@ protected:
         ASSERT_TRUE(butil::DeleteFile(butil::FilePath(mTestDir), true));
     }
 
-    LocalMeta mLocalMeta;
-    LocalStorage mLocalStorage;
+public:
+    FileHandle mRootHandle;
+    FileSystemEnv mFsEnv;
+
+    std::unique_ptr<LocalMeta> mLocalMeta;
+    std::unique_ptr<LocalStorage> mLocalStorage;
     std::string mTestDir{"testdir"};
 };
+
 
 TEST_F(LocalStorageTest, CreateWriteAndRead) {
     std::string path = mTestDir+"/test_path";
 
-    std::unique_ptr<FileHandle> file_handle = std::make_unique<FileHandle>();
-    butil::Status status = mLocalMeta.Create(path, file_handle.get());
-    ASSERT_TRUE(status.ok());
+    FileHandle parentHandle;
+    int mount_id;
+    EXPECT_GE(name_to_handle_at(AT_FDCWD, mTestDir.c_str(), parentHandle.rawhandle.get(), &mount_id, 0), 0);
+
+    int file_fd = open_by_handle_at(mFsEnv.mountfd, parentHandle.rawhandle.get(), O_RDONLY | O_DIRECTORY);
+    if (file_fd < 0) {
+        LOG(ERROR) << "Failed to open parent handle: " << strerror(errno);
+    }
+
+    std::unique_ptr<FileHandle> handle= std::make_unique<FileHandle>();
+    auto status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    ASSERT_EQ(status.error_code(), ZTO_OK);
     
 
-    status = mLocalStorage.Write(file_handle.get(), "test", 4);
+    size_t writeCount = 0;
+    status = mLocalStorage->Write(*handle, "test", 4, &writeCount);
     ASSERT_EQ(status.error_code(), ZTO_OK);
+    ASSERT_EQ(4, writeCount);
 
     char buffer[10];
-    size_t bytes_read = 0;
-    status = mLocalStorage.Read(file_handle.get(), buffer, 4, &bytes_read);
+    size_t bytesRead = 0;
+    status = mLocalStorage->Read(*handle, buffer, 4, &bytesRead);
     ASSERT_EQ(status.error_code(), ZTO_OK);
-    ASSERT_TRUE(strcmp(buffer, "test"));
+    ASSERT_EQ(4, bytesRead);
+    ASSERT_EQ(strncmp(buffer, "test", 4), 0);
 }
 
 int main(int argc, char **argv) {

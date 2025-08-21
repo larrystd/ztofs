@@ -10,9 +10,17 @@ namespace server
 class LocalMeta : public MetaInterface
 {
 public:
-    butil::Status Create(const std::string& path, FileHandle* fileHandle) override;
-    butil::Status Remove(const FileHandle& fileHandle) override;
-    butil::Status Open(const std::string& path, FileHandle* fileHandle) override;
+    LocalMeta() {}
+    explicit LocalMeta(FileSystemEnv* fsenv) : mFsEnv(fsenv) {}
+
+    butil::Status Create(const FileHandle& parenHandle, const std::string& name, FileHandle* newHandle) override;
+
+    butil::Status Remove(const FileHandle& parenHandle, const std::string& name) override;
+
+    butil::Status Open(const FileHandle& handle, int flags) override;
+
+private:
+    FileSystemEnv* mFsEnv{nullptr};
 };
 
 }

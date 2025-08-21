@@ -13,9 +13,9 @@ namespace server
 class MetaInterface
 {
 public:
-    virtual butil::Status Create(const std::string& path, FileHandle* fileHandle) = 0;
-    virtual butil::Status Remove(const FileHandle& fileHandle) = 0;
-    virtual butil::Status Open(const std::string& path, FileHandle* fileHandle) = 0;
+    virtual butil::Status Create(const FileHandle& parenHandle, const std::string& name, FileHandle* newHandle) = 0;
+    virtual butil::Status Remove(const FileHandle& parenHandle, const std::string& name) = 0;
+    virtual butil::Status Open(const FileHandle& handle, int flags) = 0;
 };
 
     

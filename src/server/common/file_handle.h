@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fcntl.h>
+#include <memory>
 #include <string>
 
 namespace ztofs
@@ -8,29 +9,34 @@ namespace ztofs
 namespace server
 {
 
-struct FileHandle 
+class FileHandle
 {
-    std::string path;
-    int fd{-1};
-    bool is_valid{true};
-    struct file_handle* handle;
+public:
+    std::unique_ptr<struct file_handle> rawhandle;
     
-    FileHandle() : fd(-1), is_valid(true) {}
-    FileHandle(const std::string& path, int fd) 
-        : path(path), fd(fd), is_valid(true) {}
+    FileHandle() {
+        rawhandle = std::make_unique<struct file_handle>();
+        rawhandle->handle_bytes = 128;
+    }
+    FileHandle(struct file_handle* handle)
+    {
+        rawhandle.reset(handle); 
+    }
     
-    FileHandle(const std::string& path, int fd, struct file_handle* handle) 
-        : path(path), fd(fd), is_valid(true), handle(handle) {}
-
-    FileHandle& operator=(const FileHandle& other)
+    FileHandle& operator=(FileHandle&& other)
     {
         if (this != &other) {
-            path = other.path;
-            fd = other.fd;
-            is_valid = other.is_valid;
+            rawhandle = std::move(other.rawhandle);
         }
         return *this;
     }
+};
+
+class FileSystemEnv
+{
+public:
+    int mountfd{-1};
+    std::string mountpath;
 };
 
 }

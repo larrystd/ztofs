@@ -15,3 +15,5 @@ compile_commands.json
 *~
 __pycache__
 /target
+src/proto/*.pb.cc
+src/proto/*.pb.h

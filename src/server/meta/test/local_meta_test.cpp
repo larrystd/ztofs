@@ -1,7 +1,10 @@
+#include <fcntl.h>
 #include <gtest/gtest.h>
+#include <memory>
 #include "server/meta/local_meta.h"
 #include "server/common/errorcode.h"
 #include "butil/file_util.h"
+#include <stdio.h>
 
 using namespace ztofs;
 using namespace ztofs::server;
@@ -11,7 +14,10 @@ class LocalMetaTest : public ::testing::Test
 protected:
     void SetUp() override 
     {
-        // Create test directory
+        mFsEnv.mountfd = open("/", O_DIRECTORY|O_RDONLY);
+        mFsEnv.mountpath = "/";
+        mLocalMeta = std::make_unique<LocalMeta>(&mFsEnv);
+        
         mkdir(mTestDir.c_str(), 0755);
     }
 
@@ -19,27 +25,37 @@ protected:
     {
         ASSERT_TRUE(butil::DeleteFile(butil::FilePath(mTestDir), true));
     }
+    FileHandle mRootHandle;
+    FileSystemEnv mFsEnv;
 
-    LocalMeta mLocalMeta;
-    std::string mTestDir{"testdir"};
+    std::unique_ptr<LocalMeta> mLocalMeta;
+    std::string mTestDir{"/testdir"};
 };
+TEST_F(LocalMetaTest, CreateAndRemove) 
+{
+    FileHandle parentHandle;
+    int mount_id;
+    EXPECT_GE(name_to_handle_at(AT_FDCWD, mTestDir.c_str(), parentHandle.rawhandle.get(), &mount_id, 0), 0);
 
-TEST_F(LocalMetaTest, CreateAndRemove) {
-    // 测试 LocalMeta::Create 函数是否能成功创建文件
-    std::unique_ptr<FileHandle> file_handle(nullptr);
-    std::string path = mTestDir+"/test_path";
-    auto status = mLocalMeta.Create(path, file_handle.get());
-    ASSERT_FALSE(status.ok());
-    file_handle.reset(new FileHandle());
-    status = mLocalMeta.Create(path, file_handle.get());
-    ASSERT_TRUE(status.ok());
-    status = mLocalMeta.Create(path, file_handle.get());
-    ASSERT_EQ(status.error_code(), ZTO_FILE_ALREADY_EXISTS);
+    int file_fd = open_by_handle_at(mFsEnv.mountfd, parentHandle.rawhandle.get(), O_RDONLY | O_DIRECTORY);
+    if (file_fd < 0) {
+        LOG(ERROR) << "Failed to open parent handle: " << strerror(errno);
+    }
 
-    status = mLocalMeta.Remove(*file_handle);
-    ASSERT_TRUE(status.ok());
-    status = mLocalMeta.Create(path, file_handle.get());
-    ASSERT_TRUE(status.ok());
+    std::unique_ptr<FileHandle> handle= std::make_unique<FileHandle>();
+    auto status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    ASSERT_EQ(status.error_code(), ZTO_OK);
+    status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    ASSERT_EQ(status.error_code(), ZTO_CREATE_FAILED);
+
+    status = mLocalMeta->Remove(parentHandle, "test_file");
+    ASSERT_EQ(status.error_code(), ZTO_OK);
+    status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    ASSERT_EQ(status.error_code(), ZTO_OK);
+    status = mLocalMeta->Open(*handle, O_RDONLY);
+    ASSERT_EQ(status.error_code(), ZTO_OK);
+    status = mLocalMeta->Remove(parentHandle, "test_file");
+    ASSERT_EQ(status.error_code(), ZTO_OK);
 }
 
 int main(int argc, char **argv) {
