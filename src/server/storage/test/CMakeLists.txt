@@ -1,14 +1,14 @@
 # Enable testing
 enable_testing()
 
-add_executable(storage_test 
+add_executable(ztofs_storage_test 
     local_storage_test.cpp
 )
-target_link_libraries(storage_test
+target_link_libraries(ztofs_storage_test
     meta
     storage
     ${BRPC_LIB} ${DYNAMIC_LIB}
 )
-add_dependencies(storage_test thirdparty_deps)
+add_dependencies(ztofs_storage_test thirdparty_deps)
 # Register test
-add_test(NAME storage_test COMMAND storage_test)
+add_test(NAME ztofs_storage_test COMMAND ztofs_storage_test)

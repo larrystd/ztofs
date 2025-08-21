@@ -1,11 +1,11 @@
 # proto
-file(GLOB PROTO_FILES "${PROJECT_SOURCE_DIR}/src/proto/*.proto")
-set(PROTO_OUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/proto")
+file(GLOB PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
+set(PROTO_OUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/proto")
 file(MAKE_DIRECTORY ${PROTO_OUT_DIR})
 # 这样cmake阶段就可以生成proto
 execute_process(
     COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-        --proto_path=${PROJECT_SOURCE_DIR}/src/proto
+        --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/proto
         --cpp_out=${PROTO_OUT_DIR}
         ${PROTO_FILES}
     RESULT_VARIABLE PROTOC_RESULT
