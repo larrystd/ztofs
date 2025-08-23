@@ -35,9 +35,9 @@ int main(int argc, char* argv[]) {
     ztofs::CreateResponse* response = new ztofs::CreateResponse();
     brpc::Controller* cntl = new brpc::Controller();
     ztofs::CreateRequest request;
-    request.set_path("1");
+    // request.set_path("1");
 
-    stub.Create(cntl, &request, response, nullptr);
+    // stub.Create(cntl, &request, response, nullptr);
 
     LOG(INFO) << "Final file client request";
     return 0;

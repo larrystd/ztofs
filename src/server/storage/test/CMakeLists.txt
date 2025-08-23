@@ -7,7 +7,7 @@ add_executable(ztofs_storage_test
 target_link_libraries(ztofs_storage_test
     meta
     storage
-    ${BRPC_LIB} ${DYNAMIC_LIB}
+    ${DYNAMIC_LIB}
 )
 add_dependencies(ztofs_storage_test thirdparty_deps)
 # Register test

@@ -1,27 +1,92 @@
-// storage.proto
 syntax = "proto2";
+import "file_common.proto";
 
 package ztofs;
 
 option cc_generic_services = true;
 
 message CreateRequest {
-    optional string path = 1;
+    optional FileHandlePB parent_handle = 1;
+    optional string name = 2;
 }
 
 message CreateResponse {
     required int32 status = 1;
+    optional FileHandlePB handle = 2;
 }
 
 message RemoveRequest {
-    optional string path = 1;
+    optional FileHandlePB parent_handle = 1;
+    optional string name = 2;
 }
 
 message RemoveResponse {
     required int32 status = 1;
 }
 
+message LookupRequest {
+    optional FileHandlePB parent_handle = 1;
+    optional string name = 2;
+}
+
+message LookupResponse {
+    required int32 status = 1;
+    optional FileHandlePB handle = 2;
+}
+
+
+message SetAttrRequest {
+    optional FileHandlePB handle = 1;
+    optional FileAttrPB attr = 2;
+}
+
+message SetAttrResponse {
+    required int32 status = 1;
+}
+
+message GetAttrRequest
+{
+    optional FileHandlePB handle = 1;
+}
+
+message GetAttrResponse 
+{
+    required int32 status = 1;
+    optional FileAttrPB attr = 2;
+}
+
+message ReadRequest 
+{
+    optional FileHandlePB handle = 1;
+    optional int64 offset = 2;
+    optional int32 size = 3;
+}
+
+message ReadResponse 
+{
+    required int32 status = 1;
+    optional bytes data = 2;
+}
+
+message WriteRequest 
+{
+    optional FileHandlePB handle = 1;
+    optional int64 offset = 2;
+    optional bytes data = 3;
+}
+
+message WriteResponse 
+{
+    required int32 status = 1;
+    optional int32 bytes_written = 2;
+}
+
 service FileService {
     rpc Create(CreateRequest) returns (CreateResponse);
     rpc Remove(RemoveRequest) returns (RemoveResponse);
+    rpc Lookup(LookupRequest) returns (LookupResponse);
+    rpc SetAttr(SetAttrRequest) returns (SetAttrResponse);
+    rpc GetAttr(GetAttrRequest) returns (GetAttrResponse);
+    rpc Read(ReadRequest) returns (ReadResponse);
+    rpc Write(WriteRequest) returns (WriteResponse);
 }

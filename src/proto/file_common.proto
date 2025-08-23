@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package ztofs;
+option cc_generic_services = true;
+
+message FileHandlePB
+{
+    optional bytes handle_data = 1;
+    optional int32 handle_type = 2;
+}
+
+message FileAttrPB 
+{
+    optional int32 mode = 1;
+    optional int32 uid = 2;
+    optional int32 gid = 3;
+    optional int64 size = 4;
+    optional int64 atime = 5;
+    optional int64 mtime = 6;
+    optional int64 ctime = 7;
+}
