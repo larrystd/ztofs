@@ -41,9 +41,9 @@ TEST_F(LocalStorageTest, CreateWriteAndRead) {
 
     FileHandle parentHandle;
     int mount_id;
-    EXPECT_GE(name_to_handle_at(AT_FDCWD, mTestDir.c_str(), parentHandle.rawhandle.get(), &mount_id, 0), 0);
+    EXPECT_GE(name_to_handle_at(AT_FDCWD, mTestDir.c_str(), parentHandle.RawHandle(), &mount_id, 0), 0);
 
-    int file_fd = open_by_handle_at(mFsEnv.mountfd, parentHandle.rawhandle.get(), O_RDONLY | O_DIRECTORY);
+    int file_fd = open_by_handle_at(mFsEnv.mountfd, parentHandle.RawHandle(), O_RDONLY | O_DIRECTORY);
     if (file_fd < 0) {
         LOG(ERROR) << "Failed to open parent handle: " << strerror(errno);
     }
@@ -54,13 +54,13 @@ TEST_F(LocalStorageTest, CreateWriteAndRead) {
     
 
     size_t writeCount = 0;
-    status = mLocalStorage->Write(*handle, "test", 4, &writeCount);
+    status = mLocalStorage->Write(*handle, "test", 4, 0, &writeCount);
     ASSERT_EQ(status.error_code(), ZTO_OK);
     ASSERT_EQ(4, writeCount);
 
     char buffer[10];
     size_t bytesRead = 0;
-    status = mLocalStorage->Read(*handle, buffer, 4, &bytesRead);
+    status = mLocalStorage->Read(*handle, buffer, 4, 0, &bytesRead);
     ASSERT_EQ(status.error_code(), ZTO_OK);
     ASSERT_EQ(4, bytesRead);
     ASSERT_EQ(strncmp(buffer, "test", 4), 0);

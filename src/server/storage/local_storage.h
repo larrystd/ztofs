@@ -12,11 +12,10 @@ namespace server
 class LocalStorage : public StorageInterface
 {
 public:
-    LocalStorage() = default;
     explicit LocalStorage(FileSystemEnv* fsenv) : mFsEnv(fsenv) {}
 
-    butil::Status Write(const FileHandle& fileHandle, const char* buffer, size_t count, size_t* bytesWritten) override;
-    butil::Status Read(const FileHandle& fileHandle, char* buffer, size_t count, size_t* bytesRead) override;
+    butil::Status Write(const FileHandle& fileHandle, const char* buffer, size_t count, size_t offset, size_t* bytesWritten) override;
+    butil::Status Read(const FileHandle& fileHandle, char* buffer, size_t count, size_t offset, size_t* bytesRead) override;
 
 private:
     FileSystemEnv* mFsEnv{nullptr};

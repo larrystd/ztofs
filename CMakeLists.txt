@@ -3,7 +3,7 @@ project(ztofs C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json")
-
+# set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${DEFINE_CLOCK_GETTIME} -DNDEBUG -O2 -D__const__=__unused__ -pipe -W -Wall -Wno-unused-parameter -fPIC -fno-omit-frame-pointer")
 
 enable_testing()
@@ -13,9 +13,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FindThreads)
 include(FindProtobuf)
-
 # brpc include and lib
 set(BRPC_PATH ${CMAKE_CURRENT_BINARY_DIR}/third_party/brpc/output)
+
 include_directories(${BRPC_PATH}/include)
 link_directories(${BRPC_PATH}/lib)
 # option(BUILD_BRPC_TOOLS "Whether to build brpc tools" OFF)
@@ -23,8 +23,24 @@ option(LINK_SO "Whether examples are linked dynamically" OFF)
 option(WITH_DEBUG_SYMBOLS "With debug symbols" OFF)
 add_subdirectory(third_party/brpc EXCLUDE_FROM_ALL)
 add_custom_target(thirdparty_deps)
-add_dependencies(thirdparty_deps brpc-static)
-set(BRPC_LIB brpc)
+add_dependencies(thirdparty_deps brpc-static protoc-gen-mcpack)
+
+# 需要生成brpc的proto, 否则头文件引用不过, brpc留的这个坑太恶心, proto就应该在cmake阶段生成而不是编译阶段
+# file(GLOB BRPC_PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/brpc/src/brpc")
+#set(BRPC_PROTO_FILES rtmp.proto rpc_dump.proto proto_base.proto)
+#set(BRPC_PROTO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/brpc/src/brpc")
+#set(BRPC_PROTO_DIR2 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/brpc/src")
+#set(BRPC_PROTO_OUT_DIR "${CMAKE_BINARY_DIR}/third_party/brpc/output/include/brpc")
+#message("BRPC_PROTO_DIR: ${BRPC_PROTO_DIR}")
+#message("BRPC_PROTO_OUT_DIR: ${BRPC_PROTO_OUT_DIR}")
+#execute_process(
+#    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+#        --proto_path=${BRPC_PROTO_DIR}
+#        --proto_path=${BRPC_PROTO_DIR2}
+#        --cpp_out=${BRPC_PROTO_OUT_DIR}
+#        ${BRPC_PROTO_FILES}
+#    RESULT_VARIABLE PROTOC_RESULT
+#)
 
 # gflags include and lib
 find_package(GTest REQUIRED)
@@ -63,6 +79,7 @@ find_package(OpenSSL)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(DYNAMIC_LIB
+    brpc
     ${CMAKE_THREAD_LIBS_INIT}
     ${GFLAGS_LIBRARY}
     ${PROTOBUF_LIBRARIES}

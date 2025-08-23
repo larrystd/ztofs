@@ -37,7 +37,7 @@ add_executable(file_server ${CMAKE_CURRENT_SOURCE_DIR}/server.cpp ${PROTO_SRCS})
 target_include_directories(file_server PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/server
 )
-target_link_libraries(file_server meta service ${BRPC_LIB} ${DYNAMIC_LIB})
+target_link_libraries(file_server meta storage service ${DYNAMIC_LIB})
 add_dependencies(file_server thirdparty_deps)
 install(TARGETS file_server DESTINATION bin)
 

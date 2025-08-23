@@ -3,3 +3,5 @@ add_library(service STATIC ${SERVICE_SOURCES})
 target_include_directories(service PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+add_subdirectory(test)
