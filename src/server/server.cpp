@@ -15,7 +15,7 @@ DEFINE_int32(idle_timeout_s, -1, "Connection will be closed if there is no "
 using namespace ztofs;
 
 static std::string gMountPath = "/";
-static server::FileSystemEnv gFsEnv;
+static std::unique_ptr<server::FileSystemEnv> gFsEnv;
 static std::unique_ptr<server::MetaInterface> gLocalMeta;
 static std::unique_ptr<server::StorageInterface> gLocalStorage;
 
@@ -34,12 +34,13 @@ int main(int argc, char* argv[]) {
         LOG(ERROR) << "Fail to add service";
         return -1;
     }
+    
+    gFsEnv = std::make_unique<server::FileSystemEnv>();
+    gFsEnv->InitEnv(gMountPath);
+    gLocalMeta = std::make_unique<server::LocalMeta>(gFsEnv.get());
+    gLocalStorage = std::make_unique<server::LocalStorage>(gFsEnv.get());
 
-    gFsEnv.InitEnv(gMountPath);
-    gLocalMeta = std::make_unique<server::LocalMeta>(&gFsEnv);
-    gLocalStorage = std::make_unique<server::LocalStorage>(&gFsEnv);
-
-    ztofs::server::FileServiceImpl file_service_impl(gLocalMeta.get(), gLocalStorage.get());
+    ztofs::server::FileServiceImpl file_service_impl(gFsEnv.get(), gLocalMeta.get(), gLocalStorage.get());
     if (server.AddService(&file_service_impl, 
             brpc::SERVER_DOESNT_OWN_SERVICE) != 0) {
         LOG(ERROR) << "Fail to add file service";

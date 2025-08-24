@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <gtest/gtest.h>
 #include <memory>
+#include "proto/file_common.pb.h"
 #include "server/meta/local_meta.h"
 #include "server/common/errorcode.h"
 #include "butil/file_util.h"
@@ -18,11 +19,14 @@ protected:
         mFsEnv.mountpath = "/";
         mLocalMeta = std::make_unique<LocalMeta>(&mFsEnv);
         
-        mkdir(mTestDir.c_str(), 0755);
+        mLocalMeta->GetRootHandle(&mRootHandle);
+        // mkdir(mTestDir.c_str(), 0755);
+        ASSERT_EQ(mLocalMeta->Create(mRootHandle, "testdir", FileTypePB::DIRECTORY, &mRootHandle).error_code(), ZTO_OK);
     }
 
     void TearDown() override 
     {
+        // ASSERT_EQ(mLocalMeta->Remove(mRootHandle, "testdir", FileTypePB::DIRECTORY, &mRootHandle).error_code(), ZTO_OK);
         ASSERT_TRUE(butil::DeleteFile(butil::FilePath(mTestDir), true));
     }
     FileHandle mRootHandle;
@@ -43,21 +47,24 @@ TEST_F(LocalMetaTest, CreateAndRemove)
     }
 
     std::unique_ptr<FileHandle> handle= std::make_unique<FileHandle>();
-    auto status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    auto status = mLocalMeta->Create(parentHandle, "test_file", FileTypePB::FILE, handle.get());
     ASSERT_EQ(status.error_code(), ZTO_OK);
-    status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    status = mLocalMeta->Create(parentHandle, "test_file", FileTypePB::FILE, handle.get());
     ASSERT_EQ(status.error_code(), ZTO_CREATE_FAILED);
 
-    status = mLocalMeta->Remove(parentHandle, "test_file");
+    status = mLocalMeta->Remove(parentHandle, "test_file", FileTypePB::FILE);
     ASSERT_EQ(status.error_code(), ZTO_OK);
-    status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    status = mLocalMeta->Create(parentHandle, "test_file", FileTypePB::FILE, handle.get());
     ASSERT_EQ(status.error_code(), ZTO_OK);
     FileHandle temp;
     status = mLocalMeta->Lookup(parentHandle, "test_file", &temp);
     ASSERT_EQ(status.error_code(), ZTO_OK);
     ASSERT_EQ(memcmp(temp.RawHandle()->f_handle, handle->RawHandle()->f_handle, handle->RawHandle()->handle_bytes), 0);
     ASSERT_EQ(status.error_code(), ZTO_OK);
-    status = mLocalMeta->Remove(parentHandle, "test_file");
+    status = mLocalMeta->Remove(parentHandle, "test_file", FileTypePB::FILE);
+    ASSERT_EQ(status.error_code(), ZTO_OK);
+
+    status = mLocalMeta->Remove(mRootHandle, mTestDir, FileTypePB::DIRECTORY);
     ASSERT_EQ(status.error_code(), ZTO_OK);
 }
 
@@ -70,7 +77,7 @@ TEST_F(LocalMetaTest, SetAndGetAttr)
 
     // Create a file to test SetAttr and GetAttr
     std::unique_ptr<FileHandle> fileHandle = std::make_unique<FileHandle>();
-    auto status = mLocalMeta->Create(parentHandle, "setattr_test_file", fileHandle.get());
+    auto status = mLocalMeta->Create(parentHandle, "setattr_test_file", FileTypePB::FILE, fileHandle.get());
     ASSERT_EQ(status.error_code(), ZTO_OK);
     
     // Get initial attributes

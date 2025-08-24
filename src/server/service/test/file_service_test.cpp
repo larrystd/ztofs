@@ -19,15 +19,16 @@ protected:
         test_dir_ = "/tmp/ztofs_test";
         mkdir(test_dir_.c_str(), 0755);
         
-        // Initialize file system environment=
-        fs_env_.InitEnv("/");
+        // Initialize file system environment
+        fs_env_ = std::make_unique<FileSystemEnv>();
+        fs_env_->InitEnv("/");
         
         // Create meta layer
-        meta_ = std::make_unique<LocalMeta>(&fs_env_);
-        storage_ = std::make_unique<LocalStorage>(&fs_env_);
+        meta_ = std::make_unique<LocalMeta>(fs_env_.get());
+        storage_ = std::make_unique<LocalStorage>(fs_env_.get());
         
         // Create service implementation
-        service_ = std::make_unique<FileServiceImpl>(meta_.get(), storage_.get());
+        service_ = std::make_unique<FileServiceImpl>(fs_env_.get(), meta_.get(), storage_.get());
         
         // Set up server
         server_ = std::make_unique<brpc::Server>();
@@ -56,13 +57,45 @@ protected:
     }
     
     std::string test_dir_;
-    FileSystemEnv fs_env_;
+    std::unique_ptr<FileSystemEnv> fs_env_;
     std::unique_ptr<LocalMeta> meta_;
     std::unique_ptr<LocalStorage> storage_;
     std::unique_ptr<FileServiceImpl> service_;
     std::unique_ptr<brpc::Server> server_;
     brpc::Channel channel_;
 };
+
+TEST_F(FileServiceTest, GetRootHandle) {
+    FileService_Stub stub(&channel_);
+    
+    // Test GetRootHandle
+    GetRootHandleRequest request;
+    GetRootHandleResponse response;
+    
+    brpc::Controller cntl;
+    stub.GetRootHandle(&cntl, &request, &response, NULL);
+    
+    ASSERT_FALSE(cntl.Failed()) << "GetRootHandle failed: " << cntl.ErrorText();
+    ASSERT_EQ(response.status(), 0) << "GetRootHandle should return success status";
+    ASSERT_TRUE(response.has_handle()) << "GetRootHandle response should contain handle";
+    
+    // Verify that we got a valid handle
+    FileHandle handle;
+    handle.FromPB(response.handle());
+    
+    // Test that we can use this handle to perform other operations
+    // For example, get attributes of the root directory
+    GetAttrRequest getattr_request;
+    GetAttrResponse getattr_response;
+    getattr_request.mutable_handle()->CopyFrom(response.handle());
+    
+    brpc::Controller getattr_cntl;
+    stub.GetAttr(&getattr_cntl, &getattr_request, &getattr_response, NULL);
+    
+    ASSERT_FALSE(getattr_cntl.Failed()) << "GetAttr failed: " << getattr_cntl.ErrorText();
+    ASSERT_EQ(getattr_response.status(), 0) << "GetAttr should return success status";
+    ASSERT_TRUE(getattr_response.has_attr()) << "GetAttr response should contain attributes";
+}
 
 TEST_F(FileServiceTest, CreateAndRemoveFile) {
     FileService_Stub stub(&channel_);
@@ -78,6 +111,7 @@ TEST_F(FileServiceTest, CreateAndRemoveFile) {
     FileHandlePB* parent_pb = create_request.mutable_parent_handle();
     parentHandle.ToPB(parent_pb);
     create_request.set_name("test_file");
+    create_request.set_type(FileTypePB::FILE);
     
     brpc::Controller create_cntl;
     stub.Create(&create_cntl, &create_request, &create_response, NULL);
@@ -103,6 +137,7 @@ TEST_F(FileServiceTest, CreateAndRemoveFile) {
     RemoveResponse remove_response;
     remove_request.mutable_parent_handle()->CopyFrom(create_request.parent_handle());
     remove_request.set_name("test_file");
+    remove_request.set_type(FileTypePB::FILE);
     
     brpc::Controller remove_cntl;
     stub.Remove(&remove_cntl, &remove_request, &remove_response, NULL);
@@ -124,6 +159,7 @@ TEST_F(FileServiceTest, GetAndSetAttr) {
     FileHandlePB* parent_pb = create_request.mutable_parent_handle();
     parentHandle.ToPB(parent_pb);
     create_request.set_name("setattr_test_file");
+    create_request.set_type(FileTypePB::FILE);
     
     brpc::Controller create_cntl;
     stub.Create(&create_cntl, &create_request, &create_response, NULL);
@@ -178,6 +214,7 @@ TEST_F(FileServiceTest, ReadWrite) {
     FileHandlePB* parent_pb = create_request.mutable_parent_handle();
     parentHandle.ToPB(parent_pb);
     create_request.set_name("readwrite_test_file");
+    create_request.set_type(FileTypePB::FILE);
     
     brpc::Controller create_cntl;
     stub.Create(&create_cntl, &create_request, &create_response, NULL);

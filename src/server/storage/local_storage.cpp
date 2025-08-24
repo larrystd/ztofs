@@ -13,7 +13,7 @@ butil::Status LocalStorage::Write(const FileHandle& fileHandle, const char* buff
     int fd = open_by_handle_at(mFsEnv->mountfd, fileHandle.RawHandle(), O_RDWR);
     if (fd < 0) {
         LOG(ERROR) << "Failed to open  handle: " << strerror(errno);
-        return butil::Status(ZTO_CREATE_FAILED, "Failed to open parent handle: %s", strerror(errno));
+        return butil::Status(ZTO_CREATE_FAILED, "Failed to open handle: %s", strerror(errno));
     }
     printf("write buffer: %s\n", buffer);
     *bytesWritten = pwrite(fd, buffer, count, offset);

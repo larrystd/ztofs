@@ -7,7 +7,14 @@
 using namespace ztofs;
 using namespace ztofs::server;
 
-butil::Status LocalMeta::Create(const FileHandle& parenHandle, const std::string& name, FileHandle* newHandle)
+butil::Status LocalMeta::GetRootHandle(FileHandle* newHandle)
+{
+    int mountId;
+    name_to_handle_at(mFsEnv->mountfd, "/", newHandle->RawHandle(), &mountId, 0);
+    return butil::Status::OK();
+}
+
+butil::Status LocalMeta::Create(const FileHandle& parenHandle, const std::string& name, FileTypePB type, FileHandle* newHandle)
 {
     int dir_fd = open_by_handle_at(mFsEnv->mountfd, parenHandle.RawHandle(), O_RDONLY | O_DIRECTORY);
     if (dir_fd < 0) {
@@ -15,8 +22,26 @@ butil::Status LocalMeta::Create(const FileHandle& parenHandle, const std::string
         return butil::Status(ZTO_CREATE_FAILED, "Failed to open parent handle: %s", strerror(errno));
     }
 
-    int new_fd = openat(dir_fd, name.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
+    int new_fd;
     
+    if (type == FileTypePB::DIRECTORY) {
+        // For directories, use mkdirat
+        if (mkdirat(dir_fd, name.c_str(), 0755) == -1) {
+            close(dir_fd);
+            LOG(ERROR) << "Failed to create directory: " << strerror(errno);
+            return butil::Status(ZTO_CREATE_FAILED, "Failed to create directory: %s", strerror(errno));
+        }
+        
+        // Open the newly created directory to get its handle
+        new_fd = openat(dir_fd, name.c_str(), O_RDONLY | O_DIRECTORY);
+    } else if (type == FileTypePB::FILE) {
+        // For regular files, use openat
+        new_fd = openat(dir_fd, name.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
+    } else {
+        close(dir_fd);
+        return butil::Status(EINVAL, "Invalid file type");
+    }
+
     if (new_fd < 0) {
         close(dir_fd);
         LOG(ERROR) << "Failed to open parent handle:" << strerror(errno);
@@ -30,14 +55,18 @@ butil::Status LocalMeta::Create(const FileHandle& parenHandle, const std::string
     return butil::Status::OK();
 }
 
-butil::Status LocalMeta::Remove(const FileHandle& parenHandle, const std::string& name)
+butil::Status LocalMeta::Remove(const FileHandle& parenHandle, const std::string& name, FileTypePB type)
 {   
     int dir_fd = open_by_handle_at(mFsEnv->mountfd, parenHandle.RawHandle(), O_RDONLY | O_DIRECTORY);
     if (dir_fd < 0) {
         LOG(ERROR) << "Failed to open parent handle: " << strerror(errno);
         return butil::Status(ZTO_CREATE_FAILED, "Failed to open parent handle: %s", strerror(errno));
     }
-    if (unlinkat(dir_fd, name.c_str(), 0) == -1) {
+    int flags = 0;
+    if (type == FileTypePB::DIRECTORY) {
+        flags = AT_REMOVEDIR;  // For directories
+    }
+    if (unlinkat(dir_fd, name.c_str(), flags) == -1) {
         return butil::Status(errno, "Failed to remove file: %s", strerror(errno));
     }
     close(dir_fd);
@@ -64,7 +93,7 @@ butil::Status LocalMeta::GetAttr(const FileHandle& fileHandle, FileAttr* attr)
         return butil::Status(EINVAL, "Attribute pointer is null");
     }
     
-    int fd = open_by_handle_at(mFsEnv->mountfd, fileHandle.RawHandle(), O_RDWR);
+    int fd = open_by_handle_at(mFsEnv->mountfd, fileHandle.RawHandle(), O_RDONLY);
     if (fd < 0) 
     {
         LOG(ERROR) << "Failed to open  handle: " << strerror(errno);
