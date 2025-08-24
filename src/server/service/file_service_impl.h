@@ -3,6 +3,7 @@
 
 #include "proto/file_service.pb.h"
 #include <brpc/server.h>
+#include "server/common/file_handle.h"
 #include "server/meta/meta.h"
 #include "server/storage/storage.h"
 
@@ -11,11 +12,17 @@ namespace server {
 
 class FileServiceImpl : public FileService {
 public:
-    FileServiceImpl(MetaInterface* meta, StorageInterface* storage)
-        : mMeta(meta),
+    FileServiceImpl(FileSystemEnv* fsEnv, MetaInterface* meta, StorageInterface* storage)
+        : mFsEnv(fsEnv),
+          mMeta(meta),
           mStorage(storage)
     {}
     virtual ~FileServiceImpl() = default;
+
+    void GetRootHandle(::google::protobuf::RpcController* controller,
+        const ::ztofs::GetRootHandleRequest* request,
+        ::ztofs::GetRootHandleResponse* response,
+        ::google::protobuf::Closure* done) override;
     
     void Create(::google::protobuf::RpcController* controller,
                 const ::ztofs::CreateRequest* request,
@@ -53,6 +60,7 @@ public:
         ::google::protobuf::Closure* done) override;
 
 private:
+    FileSystemEnv* mFsEnv{nullptr};
     MetaInterface* mMeta{nullptr};
     StorageInterface *mStorage{nullptr};
 };
