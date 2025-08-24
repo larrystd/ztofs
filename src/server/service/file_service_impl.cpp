@@ -3,10 +3,31 @@
 #include <brpc/controller.h>
 #include <brpc/closure_guard.h>
 #include <butil/logging.h>
+#include "server/common/errorcode.h"
 #include "server/common/file_handle.h"
 
-namespace ztofs {
-namespace server {
+namespace ztofs 
+{
+namespace server 
+{
+
+void FileServiceImpl::GetRootHandle(::google::protobuf::RpcController* controller,
+    const ::ztofs::GetRootHandleRequest* request,
+    ::ztofs::GetRootHandleResponse* response,
+    ::google::protobuf::Closure* done)
+{
+    brpc::ClosureGuard done_guard(done);
+    brpc::Controller* cntl = static_cast<brpc::Controller*>(controller);
+
+    std::unique_ptr<FileHandle> handle = std::make_unique<FileHandle>();
+    auto status = mMeta->GetRootHandle(handle.get());
+    if (status.ok()) {
+        handle->ToPB(response->mutable_handle());
+    } else {
+        cntl->SetFailed(status.error_code(), "%s", status.error_cstr());
+    }
+    response->set_status(status.error_code());
+}
 
 void FileServiceImpl::Create(::google::protobuf::RpcController* controller,
         const ::ztofs::CreateRequest*request,
@@ -20,8 +41,9 @@ void FileServiceImpl::Create(::google::protobuf::RpcController* controller,
     parentHandle.FromPB(request->parent_handle());
 
     std::string name = request->name();
+    FileTypePB type = request->type();
     std::unique_ptr<FileHandle> newHandle = std::make_unique<FileHandle>();
-    auto status = mMeta->Create(parentHandle, name, newHandle.get());
+    auto status = mMeta->Create(parentHandle, name, type, newHandle.get());
     if (status.ok()) {
         newHandle->ToPB(response->mutable_handle());
     } else {
@@ -41,8 +63,9 @@ void FileServiceImpl::Remove(::google::protobuf::RpcController* controller,
     FileHandle parentHandle;
     parentHandle.FromPB(request->parent_handle());
     std::string name = request->name();
+    FileTypePB type = request->type();
 
-    auto status = mMeta->Remove(parentHandle, name);
+    auto status = mMeta->Remove(parentHandle, name, type);
     if (!status.ok()) {
         cntl->SetFailed(status.error_code(), "%s", status.error_cstr());
     }
@@ -161,6 +184,7 @@ void FileServiceImpl::Write(::google::protobuf::RpcController* controller,
     } else {
         cntl->SetFailed(status.error_code(), "%s", status.error_cstr());
     }
+    
     response->set_status(status.error_code());
 }
 

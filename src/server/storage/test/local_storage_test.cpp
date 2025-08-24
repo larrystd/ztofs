@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "proto/file_common.pb.h"
 #include "server/meta/local_meta.h"
 #include "server/storage/local_storage.h"
 #include "server/common/errorcode.h"
@@ -18,7 +19,9 @@ protected:
         mLocalMeta = std::make_unique<LocalMeta>(&mFsEnv);
         mLocalStorage = std::make_unique<LocalStorage>(&mFsEnv);
         
-        mkdir(mTestDir.c_str(), 0755);
+        mLocalMeta->GetRootHandle(&mRootHandle);
+        // mkdir(mTestDir.c_str(), 0755);
+        ASSERT_EQ(mLocalMeta->Create(mRootHandle, "testdir", FileTypePB::DIRECTORY, &mRootHandle).error_code(), ZTO_OK);
     }
 
     void TearDown() override 
@@ -49,7 +52,7 @@ TEST_F(LocalStorageTest, CreateWriteAndRead) {
     }
 
     std::unique_ptr<FileHandle> handle= std::make_unique<FileHandle>();
-    auto status = mLocalMeta->Create(parentHandle, "test_file", handle.get());
+    auto status = mLocalMeta->Create(parentHandle, "test_file", FileTypePB::FILE, handle.get());
     ASSERT_EQ(status.error_code(), ZTO_OK);
     
 

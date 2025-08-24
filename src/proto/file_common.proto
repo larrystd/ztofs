@@ -19,3 +19,10 @@ message FileAttrPB
     optional int64 mtime = 6;
     optional int64 ctime = 7;
 }
+
+enum FileTypePB
+{
+    FILE = 0;
+    DIRECTORY = 1;
+    UNKNOWN = 2;
+}
